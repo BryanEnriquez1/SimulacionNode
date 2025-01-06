@@ -1,0 +1,19 @@
+{
+  "dependencies": {
+    "express": "^4.21.2"
+  },
+  "name": "simulacionserver",
+  "version": "1.0.0",
+  "description": "Simulacion de carrera",
+  "main": "index.js",
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "Simulacion",
+    "Carrera"
+  ],
+  "author": "Alexander Enriquez",
+  "license": "ISC"
+}
