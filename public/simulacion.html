@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Corredores API</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(45deg, #ff7e5f, #feb47b);
+            margin: 0;
+            padding: 20px;
+            color: white;
+        }
+
+        h1, h2 {
+            text-align: center;
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.6);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        table, th, td {
+            border: 2px solid #fff;
+            padding: 10px;
+            text-align: center;
+            font-size: 16px;
+        }
+
+        th {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        tr:nth-child(even) {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        form {
+            margin-bottom: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        input[type="text"], input[type="number"] {
+            padding: 10px;
+            margin: 10px 0;
+            width: 200px;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        button {
+            background-color: #ff6f61;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin: 10px;
+        }
+
+        button:hover {
+            background-color: #ff4e3a;
+        }
+
+        .race-status {
+            margin-top: 30px;
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .race-status label {
+            font-size: 18px;
+            color: #fff;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.6);
+        }
+
+        .race-status label span {
+            font-weight: bold;
+            color: #ff6f61;
+        }
+
+        #raceResult {
+            color: #ff6f61;
+            background-color: rgba(0, 0, 0, 0.6);
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 16px;
+            white-space: pre-wrap;
+        }
+
+        .race-status h2 {
+            font-size: 24px;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Gestión de Corredores</h1>
+
+    <!-- Tabla de corredores -->
+    <h2>Lista de Corredores</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Apellido</th>
+                <th>Posición</th>
+            </tr>
+        </thead>
+        <tbody id="corredoresTable">
+            <!-- Se llenará dinámicamente -->
+        </tbody>
+    </table>
+    <button onclick="fetchCorredores()">Actualizar Lista</button>
+
+    <!-- Formulario para agregar un corredor -->
+    <h2>Agregar Corredor</h2>
+    <form id="addCorredorForm" onsubmit="addCorredor(event)">
+        <label>Nombre: <input type="text" id="nombre" required></label>
+        <label>Apellido: <input type="text" id="apellido" required></label>
+        <button type="submit">Agregar</button>
+    </form>
+
+    <!-- Formulario para actualizar un corredor -->
+    <h2>Actualizar Corredor</h2>
+    <form id="updateCorredorForm" onsubmit="updateCorredor(event)">
+        <label>ID: <input type="number" id="updateId" required></label>
+        <label>Nombre: <input type="text" id="updateNombre"></label>
+        <label>Apellido: <input type="text" id="updateApellido"></label>
+        <button type="submit">Actualizar</button>
+    </form>
+
+    <!-- Formulario para eliminar un corredor -->
+    <h2>Eliminar Corredor</h2>
+    <form id="deleteCorredorForm" onsubmit="deleteCorredor(event)">
+        <label>ID: <input type="number" id="deleteId" required></label>
+        <button type="submit">Eliminar</button>
+    </form>
+
+    <!-- Formulario para iniciar una carrera -->
+    <h2>Iniciar Carrera</h2>
+    <form id="raceForm" onsubmit="startRace(event)">
+        <label>Distancia (en km): <input type="number" id="raceDistance" step="0.01" required></label>
+        <button type="submit">Iniciar Carrera</button>
+    </form>
+
+    <!-- Resultado de la carrera -->
+    <h2>Resultado de la Carrera</h2>
+    <pre id="raceResult"></pre>
+
+    <!-- Simulación en tiempo real de la carrera -->
+    <div class="race-status">
+        <h2>Estado de la Carrera</h2>
+        <div id="raceStatusLabels">
+            <!-- Las posiciones de los corredores se mostrarán aquí -->
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:3000/Corredores';
+        let carreraEnCurso = false;
+        let corredores = [];
+        let intervalo;
+        let distanciaTotal;
+
+        // Fetch todos los corredores
+        async function fetchCorredores() {
+            const response = await fetch(API_URL, { method: 'GET' });
+            const data = await response.json();
+            corredores = data;
+
+            const tableBody = document.getElementById('corredoresTable');
+            tableBody.innerHTML = ''; // Limpiar tabla
+
+            corredores.forEach(corredor => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${corredor.id}</td>
+                    <td>${corredor.nombre}</td>
+                    <td>${corredor.apellido}</td>
+                    <td>${corredor.posicion}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        // Agregar un corredor
+        async function addCorredor(event) {
+            event.preventDefault();
+
+            const nombre = document.getElementById('nombre').value;
+            const apellido = document.getElementById('apellido').value;
+
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nombre, apellido })
+            });
+
+            if (response.ok) {
+                alert('Corredor agregado con éxito');
+                fetchCorredores();
+                document.getElementById('addCorredorForm').reset();
+            } else {
+                alert('Error al agregar corredor');
+            }
+        }
+
+        // Actualizar un corredor
+        async function updateCorredor(event) {
+            event.preventDefault();
+
+            const idcorredor = document.getElementById('updateId').value;
+            const nombre = document.getElementById('updateNombre').value;
+            const apellido = document.getElementById('updateApellido').value;
+
+            const response = await fetch(API_URL, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ idcorredor, nombre, apellido })
+            });
+
+            if (response.ok) {
+                alert('Corredor actualizado con éxito');
+                fetchCorredores();
+                document.getElementById('updateCorredorForm').reset();
+            } else {
+                alert('Error al actualizar corredor');
+            }
+        }
+
+        // Eliminar un corredor
+        async function deleteCorredor(event) {
+            event.preventDefault();
+
+            const idcorredor = document.getElementById('deleteId').value;
+
+            const response = await fetch(`${API_URL}?idcorredor=${idcorredor}`, {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                alert('Corredor eliminado con éxito');
+                fetchCorredores();
+                document.getElementById('deleteCorredorForm').reset();
+            } else {
+                alert('Error al eliminar corredor');
+            }
+        }
+
+        // Iniciar una carrera
+        async function startRace(event) {
+            event.preventDefault();
+
+            const distancia = document.getElementById('raceDistance').value;
+            distanciaTotal = parseFloat(distancia);
+
+            // Mostrar las posiciones iniciales
+            document.getElementById('raceStatusLabels').innerHTML = corredores.map(corredor => {
+                return `<label id="label-${corredor.id}">${corredor.nombre} ${corredor.apellido}: 0.00 km</label><br>`;
+            }).join('');
+
+            // Reset posiciones de los corredores
+            corredores.forEach(corredor => {
+                corredor.posicion = 0;
+            });
+
+            carreraEnCurso = true;
+            document.getElementById('raceResult').innerText = 'La carrera ha comenzado...';
+
+            intervalo = setInterval(updateRace, 1000);
+        }
+
+        // Actualización de la carrera
+        function updateRace() {
+            if (!carreraEnCurso) return;
+
+            let carreraTerminada = false;
+            corredores.forEach(corredor => {
+                // Avance aleatorio entre 0.01 y 0.1 km por segundo
+                const avance = (Math.random() * 0.1 + 0.01);
+                corredor.posicion += avance;
+
+                // Mostrar nueva posición
+                document.getElementById(`label-${corredor.id}`).innerText = `${corredor.nombre} ${corredor.apellido}: ${corredor.posicion.toFixed(2)} km`;
+
+                // Verificar si el corredor ha terminado
+                if (corredor.posicion >= distanciaTotal) {
+                    carreraTerminada = true;
+                    document.getElementById('raceResult').innerText = `${corredor.nombre} ${corredor.apellido} ha ganado la carrera!`;
+                    carreraEnCurso = false;
+                    clearInterval(intervalo);
+                }
+            });
+
+            if (carreraTerminada) {
+                clearInterval(intervalo);
+            }
+        }
+    </script>
+</body>
+</html>
